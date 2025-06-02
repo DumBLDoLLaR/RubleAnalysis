@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 public class zarplata_TABLE
 {
@@ -9,6 +10,10 @@ public class zarplata_TABLE
     public zarplata_TABLE()
     {
         InitializeTable();
+    }
+    public DataTable GetDataTable()
+    {
+        return table;
     }
 
     private void InitializeTable()
@@ -20,7 +25,7 @@ public class zarplata_TABLE
         table.Columns.Add("Рост (%)", typeof(double));
 
         // Заполнение данных
-        table.Rows.Add(2010, 15000, 0);
+        table.Rows.Add(2010, 15000, 9.2);
         table.Rows.Add(2011, 16500, 10);
         table.Rows.Add(2012, 18000, 9);
         table.Rows.Add(2013, 20000, 11);
@@ -61,5 +66,79 @@ public class zarplata_TABLE
             data.Add(year, salary);
         }
         return data;
+    }
+
+    // Обновляет или добавляет запись по году, рассчитывая Рост (%) автоматически
+    public void UpdateOrAddSalary(int year, double salary)
+    {
+        DataRow existingRow = null;
+        foreach (DataRow row in table.Rows)
+        {
+            if ((int)row["Год"] == year)
+            {
+                existingRow = row;
+                break;
+            }
+        }
+
+        if (existingRow != null)
+        {
+            existingRow["Медианная зарплата (руб.)"] = (int)Math.Round(salary);
+            // Пересчёт роста для этого года
+            int prevYear = year - 1;
+            DataRow prevRow = null;
+            foreach (DataRow row in table.Rows)
+            {
+                if ((int)row["Год"] == prevYear)
+                {
+                    prevRow = row;
+                    break;
+                }
+            }
+            if (prevRow != null)
+            {
+                double prevSalary = Convert.ToDouble(prevRow["Медианная зарплата (руб.)"]);
+                double growth = prevSalary > 0 ? ((salary - prevSalary) / prevSalary) * 100 : 0;
+                existingRow["Рост (%)"] = Math.Round(growth, 2);
+            }
+            else
+            {
+                existingRow["Рост (%)"] = 0;
+            }
+        }
+        else
+        {
+            // Добавляем новую строку
+            int growthPercent = 0;
+            int prevYear = year - 1;
+            DataRow prevRow = null;
+            foreach (DataRow row in table.Rows)
+            {
+                if ((int)row["Год"] == prevYear)
+                {
+                    prevRow = row;
+                    break;
+                }
+            }
+            if (prevRow != null)
+            {
+                double prevSalary = Convert.ToDouble(prevRow["Медианная зарплата (руб.)"]);
+                growthPercent = prevSalary > 0 ? (int)Math.Round(((salary - prevSalary) / prevSalary) * 100) : 0;
+            }
+            table.Rows.Add(year, (int)Math.Round(salary), growthPercent);
+        }
+    }
+
+    // Метод для получения списка значений роста (Рост %) с годами
+    public Dictionary<int, double> GetGrowthData()
+    {
+        var growthData = new Dictionary<int, double>();
+        foreach (DataRow row in table.Rows)
+        {
+            int year = (int)row["Год"];
+            double growth = Convert.ToDouble(row["Рост (%)"]);
+            growthData.Add(year, growth);
+        }
+        return growthData;
     }
 }
