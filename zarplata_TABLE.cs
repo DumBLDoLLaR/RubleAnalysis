@@ -11,6 +11,7 @@ public class zarplata_TABLE
     {
         InitializeTable();
     }
+
     public DataTable GetDataTable()
     {
         return table;
@@ -66,6 +67,18 @@ public class zarplata_TABLE
             data.Add(year, salary);
         }
         return data;
+    }
+
+    // Возвращает список годов из исходной таблицы (без прогнозных данных)
+    public HashSet<int> GetOriginalYears()
+    {
+        var years = new HashSet<int>();
+        foreach (DataRow row in table.Rows)
+        {
+            int year = (int)row["Год"];
+            years.Add(year);
+        }
+        return years;
     }
 
     // Обновляет или добавляет запись по году, рассчитывая Рост (%) автоматически

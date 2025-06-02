@@ -61,33 +61,73 @@ namespace RubleAnalysis
             chartForm.Width = 800;
             chartForm.Height = 600;
 
-            Chart chart = new Chart
-            {
-                Dock = DockStyle.Fill
-            };
-
+            Chart chart = new Chart { Dock = DockStyle.Fill };
             ChartArea chartArea = new ChartArea("SalaryChartArea");
             chartArea.AxisX.Title = "Год";
             chartArea.AxisY.Title = "Зарплата (руб.)";
             chart.ChartAreas.Add(chartArea);
 
-            Series series = new Series("Медианная зарплата")
+            Series actualSeries = new Series("Фактические данные")
             {
                 ChartType = SeriesChartType.Line,
-                BorderWidth = 3,
-                Color = System.Drawing.Color.Blue
+                Color = System.Drawing.Color.Blue,
+                BorderWidth = 3
             };
 
-            var salaryDict = this.salaryData.GetSalaryDataForChart();
-            foreach (var item in salaryDict.OrderBy(kvp => kvp.Key))
+            Series forecastSeries = new Series("Прогноз")
             {
-                series.Points.AddXY(item.Key, item.Value);
+                ChartType = SeriesChartType.Line,
+                Color = System.Drawing.Color.Red,
+                BorderWidth = 3
+            };
+
+            // Установим последнюю точку фактических данных — 2025
+            int lastActualYear = 2025;
+
+            var dgvData = new Dictionary<int, int>();
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                if (row.IsNewRow) continue;
+                if (row.Cells["Год"].Value == null || row.Cells["Медианная зарплата (руб.)"].Value == null)
+                    continue;
+
+                if (int.TryParse(row.Cells["Год"].Value.ToString(), out int year) &&
+                    int.TryParse(row.Cells["Медианная зарплата (руб.)"].Value.ToString(), out int salary))
+                {
+                    dgvData[year] = salary;
+                }
             }
 
-            chart.Series.Add(series);
+            var sortedYears = dgvData.Keys.OrderBy(y => y).ToList();
+            bool forecastStarted = false;
+
+            foreach (var year in sortedYears)
+            {
+                int salary = dgvData[year];
+
+                if (year <= lastActualYear)
+                {
+                    actualSeries.Points.AddXY(year, salary);
+                }
+                else
+                {
+                    if (!forecastStarted)
+                    {
+                        forecastSeries.Points.AddXY(lastActualYear, dgvData[lastActualYear]); // плавный переход
+                        forecastStarted = true;
+                    }
+                    forecastSeries.Points.AddXY(year, salary);
+                }
+            }
+
+            chart.Series.Add(actualSeries);
+            chart.Series.Add(forecastSeries);
             chartForm.Controls.Add(chart);
             chartForm.ShowDialog();
         }
+
+
+
 
         private void CalculateAndShowMaxMinGrowth()
         {
