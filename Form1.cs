@@ -1,4 +1,3 @@
-<<<<<<< zarplata
 using System;
 using System.Data;
 using System.Windows.Forms;
@@ -6,33 +5,19 @@ using System.Windows.Forms.DataVisualization.Charting;
 using System.Linq;
 using VVP_Table_App;
 using System.Drawing;
+using zarplata_Table_App;
+
+
 namespace RubleAnalysis
 {
+    public enum DataMode { Salary, VVP }
     public partial class Form1 : Form
     {
-<<<<<<< zarplata
         private zarplata_TABLE salaryData;
         private VVP_TABLE vvpTable;
 
-        private void button8_Click(object sender, EventArgs e)
-        {
-            if (!int.TryParse(textBox6.Text, out int windowSize) || windowSize < 2)
-            {
-                MessageBox.Show("Ââåäèòå êîððåêòíîå ÷èñëî ëåò (íå ìåíåå 2) äëÿ ñêîëüçÿùåé ñðåäíåé.", "Îøèáêà", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var forecast = new zarplata_random(salaryData.GetDataTable(), windowSize);
-            try
-            {
-                forecast.ForecastNextYear();
-                salaryData.DisplayInDataGridView(dataGridView1);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Îøèáêà", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        private VVP_TABLE vvpData;
+        private DataMode currentMode;
 
         public Form1()
         {
@@ -40,7 +25,6 @@ namespace RubleAnalysis
             salaryData = new zarplata_TABLE();
             button2.Click += button2_Click;
             button4.Click += button4_Click;
-            button6.Click += button6_Click; // Êíîïêà ðàñ÷¸òà ìàêñèìóìà è ìèíèìóìà ðîñòà
             button8.Click += button8_Click;
             
             vvpTable = new VVP_TABLE();
@@ -64,6 +48,25 @@ namespace RubleAnalysis
         {
             CalculateAndShowMaxMinGrowth();
         }
+        private void button8_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(textBox6.Text, out int windowSize) || windowSize < 2)
+            {
+                MessageBox.Show("Количество дней для экстраполяции должно быть больше 2", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var forecast = new zarplata_random(salaryData.GetDataTable(), windowSize);
+            try
+            {
+                forecast.ForecastNextYear();
+                salaryData.DisplayInDataGridView(dataGridView1);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             vvpTable.DisplayInDataGridView(dataGridView1);
@@ -76,49 +79,44 @@ namespace RubleAnalysis
         {
             var (max, min) = vvpTable.GetGrowthStats();
 
-            // Âûâîäèì ðåçóëüòàòû â TextBox'û
+            // Отображение экстремумов 
             textBox1.Text = $"+{max:0.0}%";
-            textBox3.Text = $"{min:0.0}%"; // äëÿ îòðèöàòåëüíûõ çíà÷åíèé çíàê áóäåò àâòîìàòè÷åñêè
+            textBox3.Text = $"{min:0.0}%"; // для отрицательных значений знак будет автоматически
         }
         private void button7_Click(object sender, EventArgs e)
         {
             try
             {
-                // Ïîëó÷àåì êîëè÷åñòâî ïåðèîäîâ äëÿ ñêîëüçÿùåé ñðåäíåé
+                // Получаем количество периодов для скользящей средней
                 if (!int.TryParse(textBox5.Text, out int periods) || periods < 2)
                 {
-                    MessageBox.Show("Ïîæàëóéñòà, ââåäèòå êîððåêòíîå êîëè÷åñòâî ïåðèîäîâ äëÿ ñêîëüçÿùåé ñðåäíåé (íå ìåíåå 2).",
-                                 "Îøèáêà", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Количество дней для экстраполяции должно быть больше 2", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-
-                // Ïîëó÷àåì DataTable èç vvpTable
+                // Получаем DataTable из vvpTable
                 DataTable table = vvpTable.GetDataTable();
 
-                // Ñîçäàåì ýêçåìïëÿð êëàññà äëÿ ïðîãíîçèðîâàíèÿ
+                // Создаем экземпляр класса для прогнозирования
                 VVP_Extra forecaster = new VVP_Extra(table, periods);
 
-                // Âûïîëíÿåì ïðîãíîçèðîâàíèå íà 1 ãîä
+                // Выполняем прогнозирование на 1 год
                 forecaster.Forecast();
 
-                // Îáíîâëÿåì ïðèâÿçêó äàííûõ â DataGridView
+                // Обновляем привязку данных в DataGridView
                 dataGridView1.DataSource = null;
                 dataGridView1.DataSource = table;
-
-                MessageBox.Show($"Ïðîãíîç íà ñëåäóþùèé ãîä ðàññ÷èòàí ñ èñïîëüçîâàíèåì {periods} ïåðèîäîâ.",
-                               "Óñïåõ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Îøèáêà ïðè ðàñ÷åòå ïðîãíîçà: {ex.Message}",
-                               "Îøèáêà", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ошибка при расчете прогноза: {ex.Message}",
+                               "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         private void ShowChart()
         {
             var chartForm = new Form
             {
-                Text = "Äèíàìèêà ÂÂÏ è ÂÍÄ (ìëðä $)",
+                Text = "Динамика ВВП и ВНД (млрд $)",
                 Width = 900,
                 Height = 600,
                 StartPosition = FormStartPosition.CenterParent
@@ -132,37 +130,37 @@ namespace RubleAnalysis
 
             var chartArea = new ChartArea("MainArea")
             {
-                AxisX = { Title = "Ãîä", Interval = 1 },
-                AxisY = { Title = "ìëðä $" }
+                AxisX = { Title = "Год", Interval = 1 },
+                AxisY = { Title = "млрд $" }
             };
             chart.ChartAreas.Add(chartArea);
 
             DataTable displayTable = (DataTable)dataGridView1.DataSource;
 
-            AddChartSeries(chart, "ÂÂÏ (ìëðä $)", Color.Blue, SeriesChartType.Line);
-            AddChartSeries(chart, "ÂÍÄ (ìëðä $)", Color.Green, SeriesChartType.Line);
+            AddChartSeries(chart, "ВВП (млрд $)", Color.Blue, SeriesChartType.Line);
+            AddChartSeries(chart, "ВНД (млрд $)", Color.Green, SeriesChartType.Line);
 
             foreach (DataRow row in displayTable.Rows)
             {
-                int year = Convert.ToInt32(row["Ãîä"]);
-                int vvp = Convert.ToInt32(row["ÂÂÏ (ìëðä $)"].ToString().Replace(",", ""));
-                int vnd = Convert.ToInt32(row["ÂÍÄ (ìëðä $)"].ToString().Replace(",", ""));
+                int year = Convert.ToInt32(row["Год"]);
+                int vvp = Convert.ToInt32(row["ВВП (млрд $)"].ToString().Replace(",", ""));
+                int vnd = Convert.ToInt32(row["ВНД (млрд $)"].ToString().Replace(",", ""));
 
-                // Äîáàâëÿåì òî÷êó äëÿ ÂÂÏ
-                int indexVvp = chart.Series["ÂÂÏ (ìëðä $)"].Points.AddXY(year.ToString(), vvp);
-                DataPoint pointVvp = chart.Series["ÂÂÏ (ìëðä $)"].Points[indexVvp];
+                // Добавляем точку для ВВП
+                int indexVvp = chart.Series["ВВП (млрд $)"].Points.AddXY(year.ToString(), vvp);
+                DataPoint pointVvp = chart.Series["ВВП (млрд $)"].Points[indexVvp];
 
-                // Äîáàâëÿåì òî÷êó äëÿ ÂÍÄ
-                int indexVnd = chart.Series["ÂÍÄ (ìëðä $)"].Points.AddXY(year.ToString(), vnd);
-                DataPoint pointVnd = chart.Series["ÂÍÄ (ìëðä $)"].Points[indexVnd];
+                // Добавляем точку для ВНД
+                int indexVnd = chart.Series["ВНД (млрд $)"].Points.AddXY(year.ToString(), vnd);
+                DataPoint pointVnd = chart.Series["ВНД (млрд $)"].Points[indexVnd];
 
                 if (year > 2025)
                 {
-                    // Öâåò ëèíèè è òî÷êè äëÿ ïðîãíîçà ÂÂÏ
+                    // Цвет линии и точки для прогноза ВВП
                     pointVvp.Color = Color.Red;
                     pointVvp.MarkerColor = Color.Red;
 
-                    // Öâåò ëèíèè è òî÷êè äëÿ ïðîãíîçà ÂÍÄ
+                    // Цвет линии и точки для прогноза ВНД
                     pointVnd.Color = Color.DarkRed;
                     pointVnd.MarkerColor = Color.DarkRed;
                 }
@@ -173,13 +171,13 @@ namespace RubleAnalysis
                 Docking = Docking.Bottom,
                 Alignment = StringAlignment.Center
             });
-            // Ïðîâåðèì íàëè÷èå ïðîãíîçíûõ äàííûõ
-            bool hasForecast = displayTable.AsEnumerable().Any(r => Convert.ToInt32(r["Ãîä"]) > 2025);
+            // Проверим наличие прогнозных данных
+            bool hasForecast = displayTable.AsEnumerable().Any(r => Convert.ToInt32(r["Год"]) > 2025);
 
             if (hasForecast)
             {
-                // Äîáàâëÿåì ôèêòèâíóþ òî÷êó äëÿ ëåãåíäû ïðîãíîçà ÂÂÏ
-                var forecastVvpLegend = new Series("Ïðîãíîç ÂÂÏ (ìëðä $)")
+                // Добавляем фиктивную точку для легенды прогноза ВВП
+                var forecastVvpLegend = new Series("Прогноз ВВП (млрд $)")
                 {
                     ChartType = SeriesChartType.Line,
                     Color = Color.Red,
@@ -187,7 +185,7 @@ namespace RubleAnalysis
                     IsVisibleInLegend = true,
                     IsValueShownAsLabel = false
                 };
-                forecastVvpLegend.Points.AddXY("", 0); // íå îòîáðàçèòñÿ íà ãðàôèêå
+                forecastVvpLegend.Points.AddXY("", 0); // не отобразится на графике
                 forecastVvpLegend.Points[0].IsVisibleInLegend = true;
                 forecastVvpLegend.Points[0].IsValueShownAsLabel = false;
                 forecastVvpLegend.Points[0].MarkerStyle = MarkerStyle.Circle;
@@ -197,8 +195,8 @@ namespace RubleAnalysis
 
                 chart.Series.Add(forecastVvpLegend);
 
-                // Ïðîãíîç ÂÍÄ
-                var forecastVndLegend = new Series("Ïðîãíîç ÂÍÄ (ìëðä $)")
+                // Прогноз ВНД
+                var forecastVndLegend = new Series("Прогноз ВНД (млрд $)")
                 {
                     ChartType = SeriesChartType.Line,
                     Color = Color.DarkRed,
@@ -222,42 +220,42 @@ namespace RubleAnalysis
         private void ShowSalaryChart()
         {
             Form chartForm = new Form();
-            chartForm.Text = "Ãðàôèê èçìåíåíèÿ çàðïëàò";
+            chartForm.Text = "График колебания зарплат в разные годы";
             chartForm.Width = 800;
             chartForm.Height = 600;
 
             Chart chart = new Chart { Dock = DockStyle.Fill };
             ChartArea chartArea = new ChartArea("SalaryChartArea");
-            chartArea.AxisX.Title = "Ãîä";
-            chartArea.AxisY.Title = "Çàðïëàòà (ðóá.)";
+            chartArea.AxisX.Title = "Год";
+            chartArea.AxisY.Title = "Зарплата (руб.)";
             chart.ChartAreas.Add(chartArea);
 
-            Series actualSeries = new Series("Ôàêòè÷åñêèå äàííûå")
+            Series actualSeries = new Series("Факт")
             {
                 ChartType = SeriesChartType.Line,
                 Color = System.Drawing.Color.Blue,
                 BorderWidth = 3
             };
 
-            Series forecastSeries = new Series("Ïðîãíîç")
+            Series forecastSeries = new Series("Прогноз")
             {
                 ChartType = SeriesChartType.Line,
                 Color = System.Drawing.Color.Red,
                 BorderWidth = 3
             };
 
-            // Óñòàíîâèì ïîñëåäíþþ òî÷êó ôàêòè÷åñêèõ äàííûõ  2025
+            // Максимально допустимый год без экстраполяции - 2025
             int lastActualYear = 2025;
 
             var dgvData = new Dictionary<int, int>();
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
                 if (row.IsNewRow) continue;
-                if (row.Cells["Ãîä"].Value == null || row.Cells["Ìåäèàííàÿ çàðïëàòà (ðóá.)"].Value == null)
+                if (row.Cells["Год"].Value == null || row.Cells["Медианная зарплата (руб.)"].Value == null)
                     continue;
 
-                if (int.TryParse(row.Cells["Ãîä"].Value.ToString(), out int year) &&
-                    int.TryParse(row.Cells["Ìåäèàííàÿ çàðïëàòà (ðóá.)"].Value.ToString(), out int salary))
+                if (int.TryParse(row.Cells["Год"].Value.ToString(), out int year) &&
+                    int.TryParse(row.Cells["Медианная зарплата (руб.)"].Value.ToString(), out int salary))
                 {
                     dgvData[year] = salary;
                 }
@@ -287,6 +285,8 @@ namespace RubleAnalysis
 
             chart.Series.Add(actualSeries);
             chart.Series.Add(forecastSeries);
+            chartForm.Controls.Add(chart);
+            chartForm.ShowDialog();
         }
         private void AddChartSeries(Chart chart, string name, Color color, SeriesChartType type)
         {
@@ -304,24 +304,25 @@ namespace RubleAnalysis
             };
 
             chart.Series.Add(series);
+        }
         private void CalculateAndShowMaxMinGrowth()
         {
             var growthData = salaryData.GetGrowthData();
 
             if (growthData.Count == 0)
             {
-                MessageBox.Show("Äàííûå î ðîñòå îòñóòñòâóþò.", "Èíôîðìàöèÿ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Данные в росте отсутствуют.", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            // Íàõîäèì ìàêñèìàëüíûé è ìèíèìàëüíûé ðîñò
+            // Находим максимальный и минимальный рост
             var maxGrowth = growthData.OrderByDescending(kvp => kvp.Value).First();
             var minGrowth = growthData.OrderBy(kvp => kvp.Value).First();
 
-            string message = $"Ìàêñèìàëüíûé ðîñò çàðïëàòû: {maxGrowth.Value:F2}% â {maxGrowth.Key} ãîäó.\n" +
-                             $"Ìèíèìàëüíûé ðîñò çàðïëàòû: {minGrowth.Value:F2}% â {minGrowth.Key} ãîäó.";
+            string message = $"Максимальный рост зарплаты: {maxGrowth.Value:F2}% в {maxGrowth.Key} году.\n" +
+                             $"Минималтный рост зарплаты: {minGrowth.Value:F2}% в {minGrowth.Key} году.";
 
-            MessageBox.Show(message, "Ðåçóëüòàòû àíàëèçà", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(message, "Результаты анализа", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
