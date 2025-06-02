@@ -86,7 +86,6 @@ namespace RubleAnalysis
                 BackColor = Color.WhiteSmoke
             };
 
-            // Настройка области графика
             var chartArea = new ChartArea("MainArea")
             {
                 AxisX = { Title = "Год", Interval = 1 },
@@ -94,26 +93,96 @@ namespace RubleAnalysis
             };
             chart.ChartAreas.Add(chartArea);
 
-            // Добавление серий данных (только ВВП и ВНД)
+            DataTable displayTable = (DataTable)dataGridView1.DataSource;
+
             AddChartSeries(chart, "ВВП (млрд $)", Color.Blue, SeriesChartType.Line);
             AddChartSeries(chart, "ВНД (млрд $)", Color.Green, SeriesChartType.Line);
 
-            // Заполнение данными
-            FillChartData(chart);
+            foreach (DataRow row in displayTable.Rows)
+            {
+                int year = Convert.ToInt32(row["Год"]);
+                int vvp = Convert.ToInt32(row["ВВП (млрд $)"].ToString().Replace(",", ""));
+                int vnd = Convert.ToInt32(row["ВНД (млрд $)"].ToString().Replace(",", ""));
 
-            // Настройка легенды
+                // Добавляем точку для ВВП
+                int indexVvp = chart.Series["ВВП (млрд $)"].Points.AddXY(year.ToString(), vvp);
+                DataPoint pointVvp = chart.Series["ВВП (млрд $)"].Points[indexVvp];
+
+                // Добавляем точку для ВНД
+                int indexVnd = chart.Series["ВНД (млрд $)"].Points.AddXY(year.ToString(), vnd);
+                DataPoint pointVnd = chart.Series["ВНД (млрд $)"].Points[indexVnd];
+
+                if (year > 2025)
+                {
+                    // Цвет линии и точки для прогноза ВВП
+                    pointVvp.Color = Color.Red;
+                    pointVvp.MarkerColor = Color.Red;
+
+                    // Цвет линии и точки для прогноза ВНД
+                    pointVnd.Color = Color.DarkRed;
+                    pointVnd.MarkerColor = Color.DarkRed;
+                }
+            }
+
             chart.Legends.Add(new Legend
             {
                 Docking = Docking.Bottom,
                 Alignment = StringAlignment.Center
             });
+            // Проверим наличие прогнозных данных
+            bool hasForecast = displayTable.AsEnumerable().Any(r => Convert.ToInt32(r["Год"]) > 2025);
+
+            if (hasForecast)
+            {
+                // Добавляем фиктивную точку для легенды прогноза ВВП
+                var forecastVvpLegend = new Series("Прогноз ВВП (млрд $)")
+                {
+                    ChartType = SeriesChartType.Line,
+                    Color = Color.Red,
+                    BorderWidth = 3,
+                    IsVisibleInLegend = true,
+                    IsValueShownAsLabel = false
+                };
+                forecastVvpLegend.Points.AddXY("", 0); // не отобразится на графике
+                forecastVvpLegend.Points[0].IsVisibleInLegend = true;
+                forecastVvpLegend.Points[0].IsValueShownAsLabel = false;
+                forecastVvpLegend.Points[0].MarkerStyle = MarkerStyle.Circle;
+                forecastVvpLegend.Points[0].MarkerSize = 8;
+                forecastVvpLegend.Points[0].Color = Color.Red;
+                forecastVvpLegend.Points[0].MarkerColor = Color.Red;
+
+                chart.Series.Add(forecastVvpLegend);
+
+                // Прогноз ВНД
+                var forecastVndLegend = new Series("Прогноз ВНД (млрд $)")
+                {
+                    ChartType = SeriesChartType.Line,
+                    Color = Color.DarkRed,
+                    BorderWidth = 3,
+                    IsVisibleInLegend = true,
+                    IsValueShownAsLabel = false
+                };
+                forecastVndLegend.Points.AddXY("", 0);
+                forecastVndLegend.Points[0].IsVisibleInLegend = true;
+                forecastVndLegend.Points[0].IsValueShownAsLabel = false;
+                forecastVndLegend.Points[0].MarkerStyle = MarkerStyle.Circle;
+                forecastVndLegend.Points[0].MarkerSize = 8;
+                forecastVndLegend.Points[0].Color = Color.DarkRed;
+                forecastVndLegend.Points[0].MarkerColor = Color.DarkRed;
+
+                chart.Series.Add(forecastVndLegend);
+            }
+
 
             chartForm.Controls.Add(chart);
             chartForm.ShowDialog();
         }
 
+
         private void AddChartSeries(Chart chart, string name, Color color, SeriesChartType type)
         {
+            if (chart.Series.Any(s => s.Name == name)) return;
+
             var series = new Series(name)
             {
                 ChartType = type,
@@ -126,21 +195,6 @@ namespace RubleAnalysis
             };
 
             chart.Series.Add(series);
-        }
-
-        private void FillChartData(Chart chart)
-        {
-            var table = vvpTable.GetDataTable();
-
-            foreach (DataRow row in table.Rows)
-            {
-                string year = row["Год"].ToString();
-                int vvp = Convert.ToInt32(row["ВВП (млрд $)"]);
-                int vnd = Convert.ToInt32(row["ВНД (млрд $)"]);
-
-                chart.Series["ВВП (млрд $)"].Points.AddXY(year, vvp);
-                chart.Series["ВНД (млрд $)"].Points.AddXY(year, vnd);
-            }
         }
     }
 }
