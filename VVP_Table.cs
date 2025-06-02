@@ -18,30 +18,30 @@ namespace VVP_Table_App
             table = new DataTable("VVP_Data");
 
             // Создаем колонки с правильными типами данных
-            table.Columns.Add("Год", typeof(string));
-            table.Columns.Add("ВВП (млрд ₽)", typeof(string));
+            table.Columns.Add("Год", typeof(int));
+            table.Columns.Add("ВВП (млрд ₽)", typeof(int));
             table.Columns.Add("ВВП (млрд $)", typeof(int));
             table.Columns.Add("Рост ВВП (%)", typeof(double));
             table.Columns.Add("ВНД (млрд $)", typeof(int));
             table.Columns.Add("Рост ВНД (%)", typeof(double));
 
-            // Добавляем данные (целые числа для млрд $)
-            table.Rows.Add("2010", "46 309", 1524, 4.5, 1528, 4.5);
-            table.Rows.Add("2011", "55 967", 1900, 4.3, 1907, 5.1);
-            table.Rows.Add("2012", "62 218", 2015, 3.7, 2022, 3.7);
-            table.Rows.Add("2013", "66 755", 2097, 1.8, 2104, 1.8);
-            table.Rows.Add("2014", "79 200", 1861, 0.7, 1860, 0.6);
-            table.Rows.Add("2015", "83 233", 1366, -2.0, 1350, -2.8);
-            table.Rows.Add("2016", "86 044", 1280, 0.2, 1280, 0.2);
-            table.Rows.Add("2017", "92 037", 1570, 1.8, 1570, 1.8);
-            table.Rows.Add("2018", "103 626", 1660, 2.5, 1660, 2.5);
-            table.Rows.Add("2019", "109 362", 1690, 2.0, 1690, 2.0);
-            table.Rows.Add("2020", "106 967", 1480, -3.0, 1480, -3.0);
-            table.Rows.Add("2021", "131 015", 1780, 5.6, 1780, 5.6);
-            table.Rows.Add("2022", "151 455", 1990, -2.1, 1990, -2.1);
-            table.Rows.Add("2023*", "171 041", 2050, 2.2, 2050, 2.2);
-            table.Rows.Add("2024*", "~183 000", 2100, 1.5, 2100, 1.5);
-            table.Rows.Add("2025*", "~195 000", 2150, 1.3, 2150, 1.3);
+            // Добавляем данные с расчетными значениями роста
+            table.Rows.Add(2010, 46309, 1524, 0.0, 1528, 0.0); // Нет данных для расчета роста для первого года
+            table.Rows.Add(2011, 55967, 1900, 20.86, 1907, 24.80);
+            table.Rows.Add(2012, 62218, 2015, 11.17, 2022, 6.03);
+            table.Rows.Add(2013, 66755, 2097, 7.29, 2104, 4.05);
+            table.Rows.Add(2014, 79200, 1861, 18.64, 1860, -11.60);
+            table.Rows.Add(2015, 83233, 1366, 5.09, 1350, -27.42);
+            table.Rows.Add(2016, 86044, 1280, 3.38, 1280, -5.19);
+            table.Rows.Add(2017, 92037, 1570, 6.97, 1570, 22.66);
+            table.Rows.Add(2018, 103626, 1660, 12.59, 1660, 5.73);
+            table.Rows.Add(2019, 109362, 1690, 5.53, 1690, 1.81);
+            table.Rows.Add(2020, 106967, 1480, -2.19, 1480, -12.43);
+            table.Rows.Add(2021, 131015, 1780, 22.48, 1780, 20.27);
+            table.Rows.Add(2022, 151455, 1990, 15.60, 1990, 11.80);
+            table.Rows.Add(2023, 171041, 2050, 12.93, 2050, 3.02);
+            table.Rows.Add(2024, 183000, 2100, 6.99, 2100, 2.44);
+            table.Rows.Add(2025, 195000, 2150, 6.56, 2150, 2.38);
         }
 
         public void DisplayInDataGridView(DataGridView dataGridView)

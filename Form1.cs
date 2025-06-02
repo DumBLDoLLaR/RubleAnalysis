@@ -15,14 +15,16 @@ namespace RubleAnalysis
             vvpTable = new VVP_TABLE();
 
             button1.Click += button1_Click;
-            button3.Click += Button3_Click;
+            button3.Click += button3_Click;
             button5.Click += button5_Click;
+            button7.Click += button7_Click;
+
         }
         private void button1_Click(object sender, EventArgs e)
         {
             vvpTable.DisplayInDataGridView(dataGridView1);
         }
-        private void Button3_Click(object sender, EventArgs e)
+        private void button3_Click(object sender, EventArgs e)
         {
             ShowChart();
         }
@@ -33,6 +35,40 @@ namespace RubleAnalysis
             // Выводим результаты в TextBox'ы
             textBox1.Text = $"+{max:0.0}%";
             textBox3.Text = $"{min:0.0}%"; // для отрицательных значений знак будет автоматически
+        }
+        private void button7_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Получаем количество периодов для скользящей средней
+                if (!int.TryParse(textBox5.Text, out int periods) || periods < 2)
+                {
+                    MessageBox.Show("Пожалуйста, введите корректное количество периодов для скользящей средней (не менее 2).",
+                                 "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Получаем DataTable из vvpTable
+                DataTable table = vvpTable.GetDataTable();
+
+                // Создаем экземпляр класса для прогнозирования
+                VVP_Extra forecaster = new VVP_Extra(table, periods);
+
+                // Выполняем прогнозирование на 1 год
+                forecaster.Forecast();
+
+                // Обновляем привязку данных в DataGridView
+                dataGridView1.DataSource = null;
+                dataGridView1.DataSource = table;
+
+                MessageBox.Show($"Прогноз на следующий год рассчитан с использованием {periods} периодов.",
+                               "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при расчете прогноза: {ex.Message}",
+                               "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
         private void ShowChart()
         {
