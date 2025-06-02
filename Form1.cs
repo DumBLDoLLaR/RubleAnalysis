@@ -1,152 +1,193 @@
 using System;
+using System.Data;
+using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using System.Linq;
+using VVP_Table_App;
 
 namespace RubleAnalysis
 {
+    public enum DataMode { Salary, VVP }
+
     public partial class Form1 : Form
     {
         private zarplata_TABLE salaryData;
-
-        private void button8_Click(object sender, EventArgs e)
-        {
-            if (!int.TryParse(textBox6.Text, out int windowSize) || windowSize < 2)
-            {
-                MessageBox.Show("Введите корректное число лет (не менее 2) для скользящей средней.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var forecast = new zarplata_random(salaryData.GetDataTable(), windowSize);
-            try
-            {
-                forecast.ForecastNextYear();
-                salaryData.DisplayInDataGridView(dataGridView1);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        private VVP_TABLE vvpData;
+        private DataMode currentMode;
 
         public Form1()
         {
             InitializeComponent();
+
             salaryData = new zarplata_TABLE();
-            button2.Click += button2_Click;
-            button4.Click += button4_Click;
-            button6.Click += button6_Click; // Кнопка расчёта максимума и минимума роста
-            button8.Click += button8_Click;
+            vvpData = new VVP_TABLE();
+            currentMode = DataMode.Salary;
+
+            comboBox1.Items.AddRange(new string[] { "РњРµРґРёР°РЅРЅР°СЏ Р·Р°СЂРїР»Р°С‚Р°", "Р’Р’Рџ Рё Р’РќР”" });
+            comboBox1.SelectedIndex = 0;
+            comboBox1.SelectedIndexChanged += ComboBox1_SelectedIndexChanged;
+
+            buttonUpdate.Click += buttonUpdate_Click;
+            buttonChart.Click += buttonChart_Click;
+            buttonForecast.Click += buttonForecast_Click;
+            buttonStats.Click += buttonStats_Click;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void ComboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            salaryData.DisplayInDataGridView(dataGridView1);
+            currentMode = comboBox1.SelectedIndex == 0 ? DataMode.Salary : DataMode.VVP;
+            if (currentMode == DataMode.Salary)
+                salaryData.DisplayInDataGridView(dataGridView1);
+            else
+                vvpData.DisplayInDataGridView(dataGridView1);
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void buttonUpdate_Click(object sender, EventArgs e)
         {
-            ShowSalaryChart();
+            if (currentMode == DataMode.Salary)
+                salaryData.DisplayInDataGridView(dataGridView1);
+            else
+                vvpData.DisplayInDataGridView(dataGridView1);
         }
 
-        private void button6_Click(object sender, EventArgs e)
+        private void buttonChart_Click(object sender, EventArgs e)
         {
-            CalculateAndShowMaxMinGrowth();
+            if (currentMode == DataMode.Salary)
+                ShowSalaryChart();
+            else
+                ShowVVPChart();
         }
 
-        private void ShowSalaryChart()
+        private void buttonForecast_Click(object sender, EventArgs e)
         {
-            Form chartForm = new Form();
-            chartForm.Text = "График изменения зарплат";
-            chartForm.Width = 800;
-            chartForm.Height = 600;
-
-            Chart chart = new Chart { Dock = DockStyle.Fill };
-            ChartArea chartArea = new ChartArea("SalaryChartArea");
-            chartArea.AxisX.Title = "Год";
-            chartArea.AxisY.Title = "Зарплата (руб.)";
-            chart.ChartAreas.Add(chartArea);
-
-            Series actualSeries = new Series("Фактические данные")
+            if (!int.TryParse(textBoxWindow.Text, out int windowSize) || windowSize < 2)
             {
-                ChartType = SeriesChartType.Line,
-                Color = System.Drawing.Color.Blue,
-                BorderWidth = 3
-            };
-
-            Series forecastSeries = new Series("Прогноз")
-            {
-                ChartType = SeriesChartType.Line,
-                Color = System.Drawing.Color.Red,
-                BorderWidth = 3
-            };
-
-            // Установим последнюю точку фактических данных — 2025
-            int lastActualYear = 2025;
-
-            var dgvData = new Dictionary<int, int>();
-            foreach (DataGridViewRow row in dataGridView1.Rows)
-            {
-                if (row.IsNewRow) continue;
-                if (row.Cells["Год"].Value == null || row.Cells["Медианная зарплата (руб.)"].Value == null)
-                    continue;
-
-                if (int.TryParse(row.Cells["Год"].Value.ToString(), out int year) &&
-                    int.TryParse(row.Cells["Медианная зарплата (руб.)"].Value.ToString(), out int salary))
-                {
-                    dgvData[year] = salary;
-                }
+                MessageBox.Show("Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ.", "РћС€РёР±РєР°", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
-            var sortedYears = dgvData.Keys.OrderBy(y => y).ToList();
-            bool forecastStarted = false;
-
-            foreach (var year in sortedYears)
+            try
             {
-                int salary = dgvData[year];
-
-                if (year <= lastActualYear)
+                if (currentMode == DataMode.Salary)
                 {
-                    actualSeries.Points.AddXY(year, salary);
+                    var forecast = new zarplata_random(salaryData.GetDataTable(), windowSize);
+                    forecast.ForecastNextYear();
+                    salaryData.DisplayInDataGridView(dataGridView1);
                 }
                 else
                 {
-                    if (!forecastStarted)
+                    var forecast = new VVP_Extra(vvpData.GetDataTable(), windowSize);
+                    forecast.Forecast();
+                    vvpData.DisplayInDataGridView(dataGridView1);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("РћС€РёР±РєР° РїСЂРѕРіРЅРѕР·Р°: " + ex.Message);
+            }
+        }
+
+        private void buttonStats_Click(object sender, EventArgs e)
+        {
+            if (currentMode == DataMode.Salary)
+            {
+                var stats = salaryData.GetGrowthData();
+                if (stats.Count == 0)
+                {
+                    MessageBox.Show("РќРµС‚ РґР°РЅРЅС‹С… СЂРѕСЃС‚Р°.");
+                    return;
+                }
+
+                var max = stats.OrderByDescending(k => k.Value).First();
+                var min = stats.OrderBy(k => k.Value).First();
+                MessageBox.Show($"РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СЂРѕСЃС‚: {max.Value:F2}% ({max.Key} Рі.)\nРњРёРЅРёРјР°Р»СЊРЅС‹Р№ СЂРѕСЃС‚: {min.Value:F2}% ({min.Key} Рі.)");
+            }
+            else
+            {
+                var (max, min) = vvpData.GetGrowthStats();
+                MessageBox.Show($"РњР°РєСЃ: {max:0.0}%\nРњРёРЅ: {min:0.0}%");
+            }
+        }
+        
+
+        private void ShowSalaryChart()
+        {
+            Form chartForm = new Form { Text = "Р“СЂР°С„РёРє Р·Р°СЂРїР»Р°С‚", Width = 800, Height = 600 };
+            Chart chart = new Chart { Dock = DockStyle.Fill };
+            chart.ChartAreas.Add(new ChartArea("Area")
+            {
+                AxisX = { Title = "Р“РѕРґ" },
+                AxisY = { Title = "Р—Р°СЂРїР»Р°С‚Р° (СЂСѓР±.)" }
+            });
+
+            Series actual = new Series("Р¤Р°РєС‚") { ChartType = SeriesChartType.Line, Color = Color.Blue, BorderWidth = 3 };
+            Series forecast = new Series("РџСЂРѕРіРЅРѕР·") { ChartType = SeriesChartType.Line, Color = Color.Red, BorderWidth = 3 };
+
+            var rows = dataGridView1.Rows;
+            var data = rows.Cast<DataGridViewRow>()
+                .Where(r => r.Cells["Р“РѕРґ"].Value != null)
+                .ToDictionary(
+                    r => Convert.ToInt32(r.Cells["Р“РѕРґ"].Value),
+                    r => Convert.ToInt32(r.Cells["РњРµРґРёР°РЅРЅР°СЏ Р·Р°СЂРїР»Р°С‚Р° (СЂСѓР±.)"].Value));
+
+            var sortedYears = data.Keys.OrderBy(y => y);
+            int lastActualYear = 2025;
+            bool startedForecast = false;
+
+            foreach (var year in sortedYears)
+            {
+                int salary = data[year];
+                if (year <= lastActualYear)
+                    actual.Points.AddXY(year, salary);
+                else
+                {
+                    if (!startedForecast)
                     {
-                        forecastSeries.Points.AddXY(lastActualYear, dgvData[lastActualYear]); // плавный переход
-                        forecastStarted = true;
+                        forecast.Points.AddXY(lastActualYear, data[lastActualYear]);
+                        startedForecast = true;
                     }
-                    forecastSeries.Points.AddXY(year, salary);
+                    forecast.Points.AddXY(year, salary);
                 }
             }
 
-            chart.Series.Add(actualSeries);
-            chart.Series.Add(forecastSeries);
+            chart.Series.Add(actual);
+            chart.Series.Add(forecast);
             chartForm.Controls.Add(chart);
             chartForm.ShowDialog();
         }
 
-
-
-
-        private void CalculateAndShowMaxMinGrowth()
+        private void ShowVVPChart()
         {
-            var growthData = salaryData.GetGrowthData();
+            var chartForm = new Form { Text = "Р“СЂР°С„РёРє Р’Р’Рџ Рё Р’РќР”", Width = 900, Height = 600 };
+            var chart = new Chart { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke };
+            var area = new ChartArea("Area") { AxisX = { Title = "Р“РѕРґ" }, AxisY = { Title = "РјР»СЂРґ $" } };
+            chart.ChartAreas.Add(area);
 
-            if (growthData.Count == 0)
+            var vvpSeries = new Series("Р’Р’Рџ (РјР»СЂРґ $)") { ChartType = SeriesChartType.Line, Color = Color.Blue, BorderWidth = 3 };
+            var vndSeries = new Series("Р’РќР” (РјР»СЂРґ $)") { ChartType = SeriesChartType.Line, Color = Color.Green, BorderWidth = 3 };
+
+            DataTable data = vvpData.GetDataTable();
+            foreach (DataRow row in data.Rows)
             {
-                MessageBox.Show("Данные о росте отсутствуют.", "Информация", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                int year = Convert.ToInt32(row["Р“РѕРґ"]);
+                int vvp = Convert.ToInt32(row["Р’Р’Рџ (РјР»СЂРґ $)"].ToString().Replace(",", ""));
+                int vnd = Convert.ToInt32(row["Р’РќР” (РјР»СЂРґ $)"].ToString().Replace(",", ""));
+
+                var pointVvp = vvpSeries.Points.AddXY(year.ToString(), vvp);
+                var pointVnd = vndSeries.Points.AddXY(year.ToString(), vnd);
+
+                if (year > 2025)
+                {
+                    vvpSeries.Points[pointVvp].Color = Color.Red;
+                    vndSeries.Points[pointVnd].Color = Color.DarkRed;
+                }
             }
 
-            // Находим максимальный и минимальный рост
-            var maxGrowth = growthData.OrderByDescending(kvp => kvp.Value).First();
-            var minGrowth = growthData.OrderBy(kvp => kvp.Value).First();
-
-            string message = $"Максимальный рост зарплаты: {maxGrowth.Value:F2}% в {maxGrowth.Key} году.\n" +
-                             $"Минимальный рост зарплаты: {minGrowth.Value:F2}% в {minGrowth.Key} году.";
-
-            MessageBox.Show(message, "Результаты анализа", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            chart.Series.Add(vvpSeries);
+            chart.Series.Add(vndSeries);
+            chartForm.Controls.Add(chart);
+            chartForm.ShowDialog();
         }
     }
 }
