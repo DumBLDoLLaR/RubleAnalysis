@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Collections.Generic;
 
 public class zarplata_TABLE
 {
@@ -18,7 +19,8 @@ public class zarplata_TABLE
         table.Columns.Add("Медианная зарплата (руб.)", typeof(int));
         table.Columns.Add("Рост (%)", typeof(double));
 
-        table.Rows.Add(2010, 15000, 9.2);
+        // Заполнение данных
+        table.Rows.Add(2010, 15000, 0);
         table.Rows.Add(2011, 16500, 10);
         table.Rows.Add(2012, 18000, 9);
         table.Rows.Add(2013, 20000, 11);
@@ -49,18 +51,15 @@ public class zarplata_TABLE
         }
     }
 
-    public (double maxGrowth, double minGrowth) GetGrowthStats()
+    public Dictionary<int, int> GetSalaryDataForChart()
     {
-        double max = double.MinValue;
-        double min = double.MaxValue;
-
+        var data = new Dictionary<int, int>();
         foreach (DataRow row in table.Rows)
         {
-            double growth = (double)row["Рост (%)"];
-            if (growth > max) max = growth;
-            if (growth < min) min = growth;
+            int year = (int)row["Год"];
+            int salary = (int)row["Медианная зарплата (руб.)"];
+            data.Add(year, salary);
         }
-
-        return (max, min);
+        return data;
     }
 }
